@@ -1,0 +1,14 @@
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  margin: 0%;
+  padding: 0%;
+}
+
+:root {
+  display: block;
+  height: inherit;
+  width: inherit;
+  background: #313551;
+}

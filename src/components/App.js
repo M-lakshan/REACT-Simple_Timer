@@ -8,7 +8,7 @@ class App extends React.Component {
     super(props);
     this.UpdateSession = this.UpdateSession.bind(this);
 
-    let deafult_time = new Date("1970-01-01T00:00:02").toTimeString().split(' ')[0].split(':');
+    let deafult_time = new Date("1970-01-01T00:25:00").toTimeString().split(' ')[0].split(':');
 
     this.state = {
       session_time: deafult_time[1]+':'+deafult_time[2],
@@ -16,61 +16,127 @@ class App extends React.Component {
       session_length: 25,
       session_state: "stopped",
       session_paused: false,
-      session_type: "countdown"
+      session_type: "countdown",
+      session_intervalID: 0
     }
   }
 
-  StartStopSession(type) {
+  ManageSession(type) {
     let countdown = document.getElementById("time-left");
-
-    (this.state.session_state==="stopped") ? countdown.classList.add("activated") : countdown.classList.add("stopped");  
-    setTimeout(() => {
-      countdown.classList.remove("activated");
-      countdown.classList.remove("stopped");
-    }, 1000);
-
-    try {
     
-      if(type==="start") {
-        setTimeout(() => this.Countdown(type), 100);
-        
-        this.setState({ 
-          session_state: "running",
-          session_paused: false
-        });
-      } else {
-        let updated_time = new Date(`1970-01-01T00:${
-          countdown.innerHTML.split(':')[0]+':'+
-          countdown.innerHTML.split(':')[1]}`)
-          .toTimeString().toString().split(' ')[0].split(':');
-      
-        setTimeout(() => this.Countdown(type), 50);
-        
-        setTimeout(() => this.setState({ 
-          session_time: updated_time[1]+':'+updated_time[2],
-          session_state: "stopped",
-          session_paused: false
-        }), 100);
-      }
-    } catch (ex) {
-      console.log(ex);
-    }
-  }
-
-  PauseSession(sts) {
-    let countdown = document.getElementById("time-left");
-    let new_ses_len_i = countdown.innerHTML.split(':')[0];
-    let new_ses_len_ii = countdown.innerHTML.split(':')[1];
-
     try {
-      let updated_time = new Date(`1970-01-01T00:${(new_ses_len_i+':'+new_ses_len_ii)}`).toTimeString().split(' ')[0].split(':');
       
-      setTimeout(() => this.Countdown((sts) ? "start" : "stop"), 50);
+      if(this.state.session_state==="stopped") {
+        countdown.classList.add("activated");
+      } else {
+
+        if(!this.state.session_paused) {
+          countdown.classList.add("postponed");
+        } else {
+          (type==="reset") ? countdown.classList.add("stopped") : countdown.classList.add("activated");
+        }
+      }
+
+      setTimeout(() => {
+        countdown.classList.remove("activated");
+        countdown.classList.remove("postponed");
+        countdown.classList.remove("stopped");
+        (type==="reset") && countdown.classList.remove("active");
+      }, 1000);
+
+      if(type==="reset") {
+        document.getElementById("beep").pause();
+
+        if(this.state.session_intervalID!==0) {
+          clearInterval(this.state.session_intervalID);
+
+          this.setState(
+            {
+              session_time: "25:00",
+              session_break: 5,
+              session_length: 25,
+              session_state: "stopped",
+              session_paused: false,
+              session_type: "countdown",
+              session_intervalID: 0
+            }
+          );
+        } else {
+          this.setState(
+            {
+              session_time: "25:00",
+              session_break: 5,
+              session_length: 25,
+              session_state: "stopped",
+              session_paused: false,
+              session_type: "countdown"
+            }
+          );
+        }
+      } else if(type==="pause") {
+        let new_ses_len_i = countdown.innerHTML.split(':')[0];
+        let new_ses_len_ii = countdown.innerHTML.split(':')[1];
+        let updated_time = new Date(`1970-01-01T00:${(new_ses_len_i+':'+new_ses_len_ii)}`).toTimeString().split(' ')[0].split(':');
       
-      setTimeout(() => this.setState({ 
-        session_time: updated_time[1]+':'+updated_time[2],
-        session_paused: sts
-      }), 100);
+        if(this.state.session_intervalID!==0 && this.state.session_type!=="break") {
+          clearInterval(this.state.session_intervalID);
+
+          this.setState(
+            {
+              session_time: updated_time[1]+':'+updated_time[2],
+              session_state: "running",
+              session_paused: true,
+              session_intervalID: 0
+            }
+          );
+        }
+      } else {
+        const newIntervalId = setInterval(() => {
+          let minutes = (parseInt(countdown.innerHTML.split(':')[1])!==0) ? countdown.innerHTML.split(':')[0] : 
+            ((parseInt(countdown.innerHTML.split(':')[0])!==0) ? (parseInt(countdown.innerHTML.split(':')[0])-1).toString() : countdown.innerHTML.split(':')[0]);
+          let seconds = (parseInt(countdown.innerHTML.split(':')[1])===0) ? "60" : countdown.innerHTML.split(':')[1];
+          
+          minutes =  minutes.length<2 ? '0'+minutes : minutes;
+          seconds = (parseInt(seconds)-1).toString().length<2 ? '0'+(parseInt(seconds)-1) : (parseInt(seconds)-1).toString();
+          // countdown.innerHTML = minutes+':'+seconds;
+          setTimeout(() => this.setState({ ...this.state, session_time: (minutes+':'+seconds)}), 10);
+
+          let updated_time;
+
+          if(this.state.session_type==="countdown") {
+            updated_time = ((document.getElementById("break-length").innerHTML.length<2) ? 
+              '0'+document.getElementById("break-length").innerHTML : document.getElementById("break-length").innerHTML)+":00";
+          } else {
+            updated_time = new Date(`1970-01-01T00:${document.getElementById("session-length").innerHTML}:00`).toTimeString().split(' ')[0].split(':');
+            updated_time = updated_time[1]+":00";
+          }
+          
+          if(countdown.innerHTML==="00:00") {
+            document.getElementById("beep").play();
+
+            setTimeout(this.setState(prevState => { return {
+              session_break: parseInt(document.getElementById("break-length").innerHTML),
+              session_length: parseInt(document.getElementById("session-length").innerHTML),
+              session_time: updated_time,
+              session_state: "running",
+              session_paused: false,
+              session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
+              // ,session_intervalID: 0
+            }}),1000);
+          }
+
+          return 0;
+        }, 1000);
+        
+        this.setState(prevState => {
+          return {
+            ...prevState,
+            session_state: "running",
+            session_paused: false,
+            session_intervalID: newIntervalId,
+          };
+        });
+      }
     } catch (ex) {
       console.log(ex);
     }
@@ -104,84 +170,10 @@ class App extends React.Component {
       console.log(ex);
     }
   }
-  
-  ResetSession() {
-    // (localStorage.getItem("run_countdown")) && window.clearInterval(localStorage.getItem("run_countdown"));
-    (localStorage.getItem("run_countdown")) && window.clearInterval(localStorage.getItem("run_countdown"));
-
-    try {
-      let new_time = document.getElementById("session-length").innerHTML;
-
-      this.setState(
-        {
-          session_time: (new_time.length<2 ? '0'+new_time : new_time) + ":00",
-          session_break: 5,
-          session_length: 25,
-          session_state: "stopped",
-          session_paused: false,
-          session_type: "countdown"
-        }
-      );
-    } catch (ex) {
-      console.log(ex);
-    }
-  }
-
-  Countdown(type) {
-    let countdown = document.getElementById("time-left");
-
-    if(type==="start") {
-      !countdown.classList.contains("active") && countdown.classList.add("active");
-      countdown.classList.add("activated");
-
-      setTimeout(() => {
-        countdown.classList.remove("activated");
-        countdown.classList.remove("postponed");
-      }, 1000);
-
-      localStorage.setItem("run_countdown",window.setInterval(() => {
-        
-        let minutes = (parseInt(countdown.innerHTML.split(':')[1])===0) ? (parseInt(countdown.innerHTML.split(':')[0])-1).toString() : countdown.innerHTML.split(':')[0];
-        let seconds = (parseInt(countdown.innerHTML.split(':')[1])===0) ? "60" : countdown.innerHTML.split(':')[1];
-        
-        minutes = minutes.length<2 ? '0'+minutes : minutes;
-        seconds = (parseInt(seconds)-1).toString().length<2 ? '0'+(parseInt(seconds)-1).toString() : parseInt(seconds)-1;
-        countdown.innerHTML = minutes+':'+seconds;
-
-        (parseInt(minutes)===0 && parseInt(seconds-1)===0) && window.clearInterval(localStorage.getItem("run_countdown"));
-
-        let updated_time;
-
-        if(this.state.session_type==="countdown") {
-          updated_time = ((document.getElementById("break-length").innerHTML.length<2) ? '0'+document.getElementById("break-length").innerHTML : document.getElementById("break-length").innerHTML)+":00";
-        } else {
-          updated_time = new Date(`1970-01-01T00:${document.getElementById("session-length").innerHTML}:00`).toTimeString().split(' ')[0].split(':');
-          updated_time = updated_time[1]+":00";
-        }
-
-        (parseInt(minutes)===0 && parseInt(seconds-1)===0) && this.setState({
-          session_break: parseInt(document.getElementById("break-length").innerHTML),
-          session_length: parseInt(document.getElementById("session-length").innerHTML),
-          session_time: updated_time,
-          session_state: "running",
-          session_paused: false,
-          session_type: (this.state.session_type==="countdown") ? "break" : "countdown"
-        });
-
-        (parseInt(minutes)===0 && parseInt(seconds-1)===0) && this.StartStopSession("start");
-      }, 1000));
-    } else {
-      countdown.classList.remove("active");
-      countdown.classList.add("postponed");
-    
-      (localStorage.getItem("run_countdown")) && window.clearInterval(localStorage.getItem("run_countdown"));
-
-      setTimeout(() => countdown.classList.remove("postponed"), 1000);
-    }
-  }
  
   render() {
-
+    let param = (this.state.session_state==="running" ? ((this.state.session_paused) ? "start" : "pause") : "start");
+    
     return (
       <div id="Timer" className="App">
         <Timeset 
@@ -210,21 +202,21 @@ class App extends React.Component {
               {(this.state.session_type==="countdown") ? "Session" : "Break"}
             </h3>
             <p id="time-left" 
-              className={
-                (this.state.session_state==="running") ? ((this.state.session_type==="countdown") ? "active" : "on_break") : "deactivated"
-              }>{this.state.session_time}
+              className={(this.state.session_state==="running") ? ((this.state.session_type==="countdown") ? "active activated" : "on_break") : "deactivated"}>
+                {this.state.session_time}
             </p>
           </div>
           <div className="controls">
-            <button id="start_stop" onClick={() => this.StartStopSession((this.state.session_state==="running" ? "stop" : "start"))}>
+            <button id="start_stop" onClick={() => this.ManageSession(param)}>
               <i className={`fa-solid fa-${this.state.session_state==="running" ? "stop" : "play"}`}></i>
             </button>
-            <button id="pause" onClick={() => this.PauseSession(!this.state.session_paused)}>
+            <button id="pause" onClick={() => this.ManageSession(param)}>
               <i className="fa-solid fa-pause"></i>
             </button>
-            <button id="reset" onClick={() => this.ResetSession()}>
+            <button id="reset" onClick={() => this.ManageSession("reset")}>
               <i className="fa-solid fa-rotate"></i>
             </button>
+            <audio id="beep" preload="auto" src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/BeepSound.wav"></audio>
           </div>
         </section>
       </div>

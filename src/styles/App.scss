@@ -88,6 +88,7 @@
         flex-direction: row;
         align-items: center;
         justify-content: center;
+        min-width: 120px;
         width: 100%;
         font-family: "Jersey 10", sans-serif;
         font-size: 40px;
@@ -111,17 +112,18 @@
       }
 
       #time-left.activated {
-        background: #32d077;
+        color: #6018A9;
+        background: #32d077 !important;
         transition: 500ms ease-in-out;
       }
 
       #time-left.postponed {
-        background: #eb7e3c;
+        background: #eb7e3c !important;
         transition: 500ms ease-in-out;
       }
 
       #time-left.stopped {
-        background: #f93e3e;
+        background: #f93e3e !important;
         transition: 500ms ease-in-out;
       }
     }  
@@ -175,6 +177,13 @@
         &:hover {
           color: #ff8300 !important;
         }
+      }
+
+      #beep {
+        display: inline-block;
+        position: absolute;
+        z-index: -1;
+        opacity: 0%;
       }
     }
   }

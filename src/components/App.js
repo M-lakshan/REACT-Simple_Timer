@@ -143,26 +143,30 @@ class App extends React.Component {
   }
 
   UpdateSession(value) {
-    let break_limit = (this.state.session_break>1 && this.state.session_break<60); 
-    let length_limit = (this.state.session_length>1 && this.state.session_length<60); 
-    
+
     try {
+      let upd_val = (value["type"]==="break") ? this.state.session_break : this.state.session_length;
+
+      if(value["val"]==="up") {
+        upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? upd_val : upd_val+1);
+      } else {
+        upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
+      }
     
       if(value["type"]==="break") {
-        this.setState({ session_break: (break_limit) ? this.state.session_break+((value["val"]==="up") ? 1 : (-1)) : this.state.session_break });
+        this.setState({ session_break: upd_val });
       } else {
         let updated_time;
-        let new_ses_len = (length_limit) ? this.state.session_length+((value["val"]==="up") ? 1 : (-1)) : this.state.session_length;
         
-        if(new_ses_len!==60) {
-          updated_time = new Date(`1970-01-01T00:${(new_ses_len.toString().length===1) ? '0'+new_ses_len : new_ses_len}:00`)
-                        .toTimeString().split(' ')[0].split(':');
-        } else {
+        if(upd_val===60) {
           updated_time = "00:60:00".split(":");
+        } else {
+          updated_time = new Date(`1970-01-01T00:${(upd_val.toString().length===1) ? '0'+upd_val : upd_val}:00`)
+                        .toTimeString().split(' ')[0].split(':');
         }
         
         this.setState({
-          session_length: new_ses_len,
+          session_length: upd_val,
           session_time: updated_time[1]+':'+updated_time[2]
         });
       } 

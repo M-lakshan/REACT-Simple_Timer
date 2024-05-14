@@ -8,7 +8,7 @@ class App extends React.Component {
     super(props);
     this.UpdateSession = this.UpdateSession.bind(this);
 
-    let deafult_time = new Date("1970-01-01T00:25:00").toTimeString().split(' ')[0].split(':');
+    let deafult_time = new Date("1970-01-01T00:00:02").toTimeString().split(' ')[0].split(':');
 
     this.state = {
       session_time: deafult_time[1]+':'+deafult_time[2],
@@ -24,121 +24,117 @@ class App extends React.Component {
   ManageSession(type) {
     let countdown = document.getElementById("time-left");
     
-    try {
-      
-      if(this.state.session_state==="stopped") {
-        countdown.classList.add("activated");
-      } else {
+    if(this.state.session_state==="stopped") {
+      countdown.classList.add("activated");
+    } else {
 
-        if(!this.state.session_paused) {
-          countdown.classList.add("postponed");
-        } else {
-          (type==="reset") ? countdown.classList.add("stopped") : countdown.classList.add("activated");
-        }
+      if(!this.state.session_paused) {
+        countdown.classList.add("postponed");
+      } else {
+        (type==="reset") ? countdown.classList.add("stopped") : countdown.classList.add("activated");
       }
+    }
 
-      setTimeout(() => {
-        countdown.classList.remove("activated");
-        countdown.classList.remove("postponed");
-        countdown.classList.remove("stopped");
-        (type==="reset") && countdown.classList.remove("active");
-      }, 1000);
+    setTimeout(() => {
+      countdown.classList.remove("activated");
+      countdown.classList.remove("postponed");
+      countdown.classList.remove("stopped");
+      (type==="reset") && countdown.classList.remove("active");
+    }, 1000);
 
-      if(type==="reset") {
-        document.getElementById("beep").pause();
+    if(type==="reset") {
+      document.getElementById("beep").pause();
 
-        if(this.state.session_intervalID!==0) {
-          clearInterval(this.state.session_intervalID);
+      if(this.state.session_intervalID!==0) {
+        clearInterval(this.state.session_intervalID);
 
-          this.setState(
-            {
-              session_time: "25:00",
-              session_break: 5,
-              session_length: 25,
-              session_state: "stopped",
-              session_paused: false,
-              session_type: "countdown",
-              session_intervalID: 0
-            }
-          );
-        } else {
-          this.setState(
-            {
-              session_time: "25:00",
-              session_break: 5,
-              session_length: 25,
-              session_state: "stopped",
-              session_paused: false,
-              session_type: "countdown"
-            }
-          );
-        }
-      } else if(type==="pause") {
-        let new_ses_len_i = countdown.innerHTML.split(':')[0];
-        let new_ses_len_ii = countdown.innerHTML.split(':')[1];
-        let updated_time = new Date(`1970-01-01T00:${(new_ses_len_i+':'+new_ses_len_ii)}`).toTimeString().split(' ')[0].split(':');
-      
-        if(this.state.session_intervalID!==0 && this.state.session_type!=="break") {
-          clearInterval(this.state.session_intervalID);
-
-          this.setState(
-            {
-              session_time: updated_time[1]+':'+updated_time[2],
-              session_state: "running",
-              session_paused: true,
-              session_intervalID: 0
-            }
-          );
-        }
+        this.setState(
+          {
+            session_time: "25:00",
+            session_break: 5,
+            session_length: 25,
+            session_state: "stopped",
+            session_paused: false,
+            session_type: "countdown",
+            session_intervalID: 0
+          }
+        );
       } else {
-        const newIntervalId = setInterval(() => {
-          let minutes = (parseInt(countdown.innerHTML.split(':')[1])!==0) ? countdown.innerHTML.split(':')[0] : 
-            ((parseInt(countdown.innerHTML.split(':')[0])!==0) ? (parseInt(countdown.innerHTML.split(':')[0])-1).toString() : countdown.innerHTML.split(':')[0]);
-          let seconds = (parseInt(countdown.innerHTML.split(':')[1])===0) ? "60" : countdown.innerHTML.split(':')[1];
-          
-          minutes =  minutes.length<2 ? '0'+minutes : minutes;
-          seconds = (parseInt(seconds)-1).toString().length<2 ? '0'+(parseInt(seconds)-1) : (parseInt(seconds)-1).toString();
-          // countdown.innerHTML = minutes+':'+seconds;
-          setTimeout(() => this.setState({ ...this.state, session_time: (minutes+':'+seconds)}), 10);
+        this.setState(
+          {
+            session_time: "25:00",
+            session_break: 5,
+            session_length: 25,
+            session_state: "stopped",
+            session_paused: false,
+            session_type: "countdown"
+          }
+        );
+      }
+    } else if(type==="pause") {
+      let new_ses_len_i = countdown.innerHTML.split(':')[0];
+      let new_ses_len_ii = countdown.innerHTML.split(':')[1];
+      let updated_time = new Date(`1970-01-01T00:${(new_ses_len_i+':'+new_ses_len_ii)}`).toTimeString().split(' ')[0].split(':');
+    
+      if(this.state.session_intervalID!==0 && this.state.session_type!=="break") {
+        clearInterval(this.state.session_intervalID);
 
+        this.setState(
+          {
+            session_time: updated_time[1]+':'+updated_time[2],
+            session_state: "running",
+            session_paused: true,
+            session_intervalID: 0
+          }
+        );
+      }
+    } else {
+      const newIntervalId = setInterval(() => {
+        let mnt = parseInt(countdown.innerHTML.split(':')[0]);
+        let minutes = (parseInt(countdown.innerHTML.split(':')[1])!==0) ? countdown.innerHTML.split(':')[0] : ((mnt!==0) ? (mnt-1).toString() : mnt);
+        let seconds = (parseInt(countdown.innerHTML.split(':')[1])===0) ? "60" : countdown.innerHTML.split(':')[1];
+        
+        setTimeout(() => countdown.classList.remove("activated"), 1000);
+
+        minutes =  minutes.length<2 ? '0'+minutes : minutes;
+        seconds = (parseInt(seconds)-1).toString().length<2 ? '0'+(parseInt(seconds)-1) : (parseInt(seconds)-1).toString();
+        
+        this.setState({ ...this.state, session_time: (minutes+':'+seconds)});
+        
+        if(this.state.session_time==="00:00") {
           let updated_time;
+          let ses_brk = document.getElementById("break-length").innerHTML;
+          let ses_len = document.getElementById("session-length").innerHTML;
+
+          document.getElementById("beep").play();
 
           if(this.state.session_type==="countdown") {
-            updated_time = ((document.getElementById("break-length").innerHTML.length<2) ? 
-              '0'+document.getElementById("break-length").innerHTML : document.getElementById("break-length").innerHTML)+":00";
+            updated_time = ((ses_brk.length<2) ? '0'+ses_brk : ses_brk)+":00";
           } else {
-            updated_time = new Date(`1970-01-01T00:${document.getElementById("session-length").innerHTML}:00`).toTimeString().split(' ')[0].split(':');
-            updated_time = updated_time[1]+":00";
-          }
-          
-          if(countdown.innerHTML==="00:00") {
-            document.getElementById("beep").play();
-
-            setTimeout(this.setState(prevState => { return {
-              session_break: parseInt(document.getElementById("break-length").innerHTML),
-              session_length: parseInt(document.getElementById("session-length").innerHTML),
-              session_time: updated_time,
-              session_state: "running",
-              session_paused: false,
-              session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
-              // ,session_intervalID: 0
-            }}),1000);
+            updated_time = new Date(`1970-01-01T00:${(ses_len.length<2) ? '0'+ses_len : ses_len}:00`).toTimeString().split(' ')[0].split(':')[1]+":00";
           }
 
-          return 0;
-        }, 1000);
-        
-        this.setState(prevState => {
-          return {
-            ...prevState,
+          setTimeout(this.setState(prevState => { return {
+            session_break: parseInt(ses_brk),
+            session_length: parseInt(ses_len),
+            session_time: updated_time.toString(),
             session_state: "running",
             session_paused: false,
-            session_intervalID: newIntervalId,
-          };
-        });
-      }
-    } catch (ex) {
-      console.log(ex);
+            session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
+          }}),1000);
+        }
+
+        return 0;
+      }, 1000);
+      
+      this.setState(prevState => {
+        return {
+          ...prevState,
+          session_state: "running",
+          session_paused: false,
+          session_intervalID: newIntervalId,
+        };
+      });
     }
   }
 

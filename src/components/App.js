@@ -99,7 +99,7 @@ class App extends React.Component {
         minutes =  minutes.length<2 ? '0'+minutes : minutes;
         seconds = (parseInt(seconds)-1).toString().length<2 ? '0'+(parseInt(seconds)-1) : (parseInt(seconds)-1).toString();
         
-        this.setState({ ...this.state, session_time: (minutes+':'+seconds)});
+        this.setState(prevState => { return { prevState, session_time: (minutes+':'+seconds)}});
         
         if(this.state.session_time==="00:00") {
           let updated_time;
@@ -114,14 +114,19 @@ class App extends React.Component {
             updated_time = new Date(`1970-01-01T00:${(ses_len.length<2) ? '0'+ses_len : ses_len}:00`).toTimeString().split(' ')[0].split(':')[1]+":00";
           }
 
-          setTimeout(this.setState(prevState => { return {
-            session_break: parseInt(ses_brk),
-            session_length: parseInt(ses_len),
-            session_time: updated_time.toString(),
-            session_state: "running",
-            session_paused: false,
-            session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
-          }}),1000);
+          setTimeout(this.setState(prevState => { 
+            // clearInterval(prevState.session_intervalID);
+
+            return {
+              session_break: parseInt(ses_brk),
+              session_length: parseInt(ses_len),
+              session_time: updated_time.toString(),
+              session_state: "running",
+              session_paused: false,
+              session_type: (prevState.session_type==="countdown") ? "break" : "countdown",
+              // session_intervalID: 0
+            }
+          }),1000);
         }
 
         return 0;
@@ -169,6 +174,10 @@ class App extends React.Component {
     } catch (ex) {
       console.log(ex);
     }
+  }
+
+  componentDidMount() {
+    
   }
  
   render() {

@@ -157,10 +157,10 @@
           }
         }
 
-        i.fa-stop {
+        i.fa-pause {
 
           &:hover {
-            color: #ff5252 !important;
+            color: #ff8300 !important;
           }
         }
       }
@@ -172,12 +172,12 @@
         }
       }
 
-      #pause {
+      // #pause {
 
-        &:hover {
-          color: #ff8300 !important;
-        }
-      }
+      //   &:hover {
+      //     color: #ff8300 !important;
+      //   }
+      // }
 
       #beep {
         display: inline-block;

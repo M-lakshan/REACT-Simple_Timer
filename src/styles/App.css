@@ -127,14 +127,11 @@
 #Timer .timer .controls #start_stop i.fa-play:hover {
   color: #03e988 !important;
 }
-#Timer .timer .controls #start_stop i.fa-stop:hover {
-  color: #ff5252 !important;
+#Timer .timer .controls #start_stop i.fa-pause:hover {
+  color: #ff8300 !important;
 }
 #Timer .timer .controls #reset:hover {
   color: #ff5252 !important;
-}
-#Timer .timer .controls #pause:hover {
-  color: #ff8300 !important;
 }
 #Timer .timer .controls #beep {
   display: inline-block;

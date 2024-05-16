@@ -6,12 +6,12 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.UpdateSession = this.UpdateSession.bind(this);
+    this.UpdateSession = this.UpdateSessionDurations.bind(this);
 
     this.state = {
-      session_time: new Date(1500 * 1000).toISOString().substring(14, 19),
-      session_break: 5,
-      session_length: 25,
+      session_time: new Date(3 * 1000).toISOString().substring(14, 19),
+      session_break: 2,
+      session_length: 1,
       session_state: "stopped",
       session_paused: false,
       session_type: "countdown",
@@ -19,13 +19,17 @@ class App extends React.Component {
     }
   }
 
-  ChangeSessionState(secs_val) {
+  ChangeSessionState(time_val) {
+    document.getElementById("beep").pause();
     
+    console.log(new Date(time_val).toString().split(' ')[4].substring(3,8));/////////////
+
     this.setState(prevState => { 
       return {
         session_break: prevState.session_break,
         session_length: prevState.session_length,
-        session_time: new Date(secs_val-1).toString().split(' ')[4].substring(3,8),
+        // session_time: time_val,
+        session_time: new Date(time_val).toString().split(' ')[4].substring(3,8),
         session_state: "running",
         session_paused: false,
         session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
@@ -62,7 +66,7 @@ class App extends React.Component {
 
         this.setState(
           {
-            session_time: "25:00",
+            session_time: new Date(1500 * 1000).toISOString().substring(14, 19),
             session_break: 5,
             session_length: 25,
             session_state: "stopped",
@@ -74,7 +78,7 @@ class App extends React.Component {
       } else {
         this.setState(
           {
-            session_time: "25:00",
+            session_time: new Date(1500 * 1000).toISOString().substring(14, 19),
             session_break: 5,
             session_length: 25,
             session_state: "stopped",
@@ -115,10 +119,11 @@ class App extends React.Component {
         this.setState({ session_time: upd_time });
 
         if(upd_time==="00:00") {
-          let upd_val = (this.state.session_type==="countdown") ? this.state.session_break : this.state.session_length;
-          let updated_time = new Date(`${current_date}T0${upd_val===60 ? "1:00:00" : (`0:${upd_val<10 ? '0'+upd_val : upd_val}:00`)}`).getTime(); 
-          
           document.getElementById("beep").play();
+
+          let upd_val = (this.state.session_type==="countdown") ? this.state.session_break : this.state.session_length;
+          // let updated_time = upd_val===60 ? "60:00" : (`${upd_val<10 ? '0'+upd_val : upd_val}:00`); 
+          let updated_time = new Date(`${current_date}T0${upd_val==="60:00" ? "1:00:00" : ("0:"+(upd_val<10 ? '0'+upd_val : upd_val))}`).getTime(); 
 
           setTimeout(() => this.ChangeSessionState(updated_time),1000);
         }
@@ -135,7 +140,7 @@ class App extends React.Component {
     }
   }
 
-  UpdateSession(value) {
+  UpdateSessionDurations(value) {
 
     try {
       let upd_val = (value["type"]==="break") ? this.state.session_break : this.state.session_length;
@@ -159,17 +164,14 @@ class App extends React.Component {
     }
   }
 
-  componentDidMount() {
-    
-  }
- 
   render() {
     let param = (this.state.session_state==="running" ? ((this.state.session_paused) ? "start" : "pause") : "start");
-    
+    let btn_cls = (this.state.session_paused ? "play" : (this.state.session_state==="running" ? "pause" : "play"));
+
     return (
       <div id="Timer" className="App">
         <Timeset 
-          setTimeFrame={(e) => this.UpdateSession(e)}
+          setTimeFrame={(e) => this.UpdateSessionDurations(e)}
           _id="break-label"
           _class="break-control"
           _type="Break"
@@ -179,7 +181,7 @@ class App extends React.Component {
           _val={this.state.session_break}
         />
         <Timeset 
-          setTimeFrame={(e) => this.UpdateSession(e)}
+          setTimeFrame={(e) => this.UpdateSessionDurations(e)}
           _id="session-label"
           _class="session-control"
           _type="Duration"
@@ -200,10 +202,7 @@ class App extends React.Component {
           </div>
           <div className="controls">
             <button id="start_stop" onClick={() => this.ManageSession(param)}>
-              <i className={`fa-solid fa-${this.state.session_state==="running" ? "stop" : "play"}`}></i>
-            </button>
-            <button id="pause" onClick={() => this.ManageSession(param)}>
-              <i className="fa-solid fa-pause"></i>
+              <i className={`fa-solid fa-${btn_cls}`}></i>
             </button>
             <button id="reset" onClick={() => this.ManageSession("reset")}>
               <i className="fa-solid fa-rotate"></i>

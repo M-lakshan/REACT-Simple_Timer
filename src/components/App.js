@@ -1,53 +1,84 @@
-import React from 'react';
+import { useState, useEffect } from "react";
 import Timeset from './Timeset';
 import '../styles/App.css';
 
-class App extends React.Component {
+function App() {
 
-  constructor(props) {
-    super(props);
-    this.UpdateSession = this.UpdateSessionDurations.bind(this);
+  const [SessionTime,SetSessionTime] = useState(new Date(15 * 1000).toISOString().substring(14, 19));
+  const [SessionBreak,SetSessionBreak] = useState(1);
+  const [SessionLength,SetSessionLength] = useState(2);
+  const [SessionState,SetSessionState] = useState("stopped");
+  const [SessionType,SetSessionType] = useState("countdown");
+  const [SessionOnPause,SetSessionOnPause] = useState(false);
 
-    this.state = {
-      session_time: new Date(3 * 1000).toISOString().substring(14, 19),
-      session_break: 2,
-      session_length: 1,
-      session_state: "stopped",
-      session_paused: false,
-      session_type: "countdown",
-      session_intervalID: 0
+  const UpdateDurations = (value) => {
+
+    try {
+      let upd_val = (value["type"]==="break") ? SessionBreak : SessionLength;
+
+      if(value["val"]==="up") {
+        upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? upd_val : upd_val+1);
+      } else {
+        upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
+      }
+          
+      console.log(upd_val)////////////////////////////////////////////////////////////////////////////////////////////
+      if(value["type"]==="break") {
+        SetSessionBreak(upd_val);
+      } else {
+        console.log("on_pause",(upd_val===60) ? "60:00" : new Date(upd_val * 60 * 1000).toISOString().substring(14, 19))////////////////////////////////////////////////////////////////////////////////////////////
+        SetSessionTime((upd_val===60) ? "60:00" : new Date(upd_val * 60 * 1000).toISOString().substring(14, 19));
+        SetSessionLength(upd_val);
+      } 
+    } catch (ex) {
+      console.log(ex);
     }
   }
 
-  ChangeSessionState(time_val) {
-    document.getElementById("beep").pause();
+  useEffect(() => {
     
-    console.log(new Date(time_val).toString().split(' ')[4].substring(3,8));/////////////
+    const timer = setInterval(() => {
+      if(SessionState==="running" && !SessionOnPause) {
 
-    this.setState(prevState => { 
-      return {
-        session_break: prevState.session_break,
-        session_length: prevState.session_length,
-        // session_time: time_val,
-        session_time: new Date(time_val).toString().split(' ')[4].substring(3,8),
-        session_state: "running",
-        session_paused: false,
-        session_type: (prevState.session_type==="countdown") ? "break" : "countdown"
+        if(SessionTime.toString()==="00:00") {
+          let upd_val = (SessionType==="countdown") ? SessionBreak : SessionLength;
+          let upd_time = `${upd_val===60 ? 60 : ((upd_val<10) ? '0'+upd_val : upd_val)}:00`; 
+          
+          document.getElementById("beep").play();
+
+          console.log("jump:",upd_time)////////////////////////////////////////////////////////////////////////////////////////////
+          SetSessionType((SessionType==="countdown") ? "break" : "countdown");  
+          SetSessionTime(upd_time);  
+        } else {
+          let dt = SessionTime.split(':').map(tm => parseInt(tm));
+          let mns = (dt[1]-1!==0) ? dt[0] : ((dt[0]===0) ? 0 : dt[0]-1); 
+          let scs = (dt[1]-1!==0) ? dt[1]-1 : ((dt[1]-1===0) ? 0 : 59);
+          
+          setTimeout(() => document.getElementById("time-left").classList.remove("activated"), 1000);
+          
+          console.log(SessionType,new Date(((mns*60) + scs) * 1000).toISOString().substring(14, 19))////////////////////////////////////////////////////////////////////////////////////////////
+          SetSessionTime(new Date(((mns*60) + scs) * 1000).toISOString().substring(14, 19));  
+        }
       }
-    });
-  }
+    },100);
 
-  ManageSession(type) {
+    return () => clearInterval(timer);
+  });
+
+  const ManageSession = (type) => {
     let countdown = document.getElementById("time-left");
     
-    if(this.state.session_state==="stopped") {
+    if(SessionState==="stopped") {
       countdown.classList.add("activated");
     } else {
 
-      if(!this.state.session_paused) {
-        countdown.classList.add("postponed");
-      } else {
-        (type==="reset") ? countdown.classList.add("stopped") : countdown.classList.add("activated");
+      if(SessionType!=="break") {
+
+        if(!SessionOnPause) {
+          countdown.classList.add("postponed");
+        } else {
+          (type==="reset") ? countdown.classList.add("stopped") : countdown.classList.add("activated");
+        }
       }
     }
 
@@ -60,159 +91,59 @@ class App extends React.Component {
 
     if(type==="reset") {
       document.getElementById("beep").pause();
-
-      if(this.state.session_intervalID!==0) {
-        clearInterval(this.state.session_intervalID);
-
-        this.setState(
-          {
-            session_time: new Date(1500 * 1000).toISOString().substring(14, 19),
-            session_break: 5,
-            session_length: 25,
-            session_state: "stopped",
-            session_paused: false,
-            session_type: "countdown",
-            session_intervalID: 0
-          }
-        );
-      } else {
-        this.setState(
-          {
-            session_time: new Date(1500 * 1000).toISOString().substring(14, 19),
-            session_break: 5,
-            session_length: 25,
-            session_state: "stopped",
-            session_paused: false,
-            session_type: "countdown"
-          }
-        );
-      }
-    } else if(type==="pause") {
-      let new_ses_len_i = countdown.innerHTML.split(':')[0];
-      let new_ses_len_ii = countdown.innerHTML.split(':')[1];
-      let updated_time = new Date(`1970-01-01T00:${(new_ses_len_i+':'+new_ses_len_ii)}`).toTimeString().split(' ')[0].split(':');
-    
-      if(this.state.session_intervalID!==0 && this.state.session_type!=="break") {
-        clearInterval(this.state.session_intervalID);
-
-        this.setState(
-          {
-            session_time: updated_time[1]+':'+updated_time[2],
-            session_state: "running",
-            session_paused: true,
-            session_intervalID: 0
-          }
-        );
-      }
-    } else {
-      const newIntervalId = setInterval(() => {
-        let displayed_time = this.state.session_time;
-        let local_date = new Date();
-        let current_date = local_date.getFullYear()+'-'+
-                          (local_date.getMonth()<10 ? '0'+local_date.getMonth() : local_date.getMonth())+'-'+
-                          (local_date.getDate()<10 ? '0'+local_date.getDate() : local_date.getDate());
-        let dsp_time_in_secs = new Date(`${current_date}T0${displayed_time==="60:00" ? "1:00:00" : ("0:"+displayed_time)}`).getTime(); 
-        let upd_time = new Date(dsp_time_in_secs-1).toString().split(' ')[4].substring(3,8);
-
-        setTimeout(() => countdown.classList.remove("activated"), 1000);
-          
-        this.setState({ session_time: upd_time });
-
-        if(upd_time==="00:00") {
-          document.getElementById("beep").play();
-
-          let upd_val = (this.state.session_type==="countdown") ? this.state.session_break : this.state.session_length;
-          // let updated_time = upd_val===60 ? "60:00" : (`${upd_val<10 ? '0'+upd_val : upd_val}:00`); 
-          let updated_time = new Date(`${current_date}T0${upd_val==="60:00" ? "1:00:00" : ("0:"+(upd_val<10 ? '0'+upd_val : upd_val))}`).getTime(); 
-
-          setTimeout(() => this.ChangeSessionState(updated_time),1000);
-        }
-      }, 1000);
+      document.getElementById("beep").currentTime = 0;
       
-      this.setState(prevState => {
-        return {
-          ...prevState,
-          session_state: "running",
-          session_paused: false,
-          session_intervalID: newIntervalId
-        };
-      });
+      SetSessionTime(new Date(1500 * 1000).toISOString().substring(14, 19));
+      SetSessionBreak(5);
+      SetSessionLength(25);
+      SetSessionState("stopped");
+      SetSessionType("countdown");
+      SetSessionOnPause(false);
+    } else if(type==="pause") {
+      (SessionType!=="break") && SetSessionOnPause(!SessionOnPause);
+    } else {
+      SetSessionState("running");
+      SetSessionOnPause(false);
     }
   }
 
-  UpdateSessionDurations(value) {
-
-    try {
-      let upd_val = (value["type"]==="break") ? this.state.session_break : this.state.session_length;
-
-      if(value["val"]==="up") {
-        upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? upd_val : upd_val+1);
-      } else {
-        upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
-      }
-    
-      if(value["type"]==="break") {
-        this.setState({ session_break: upd_val });
-      } else {
-        this.setState({
-          session_length: upd_val,
-          session_time: (upd_val===60) ? "60:00" : new Date(upd_val * 60 * 1000).toISOString().substring(14, 19)
-        });
-      } 
-    } catch (ex) {
-      console.log(ex);
-    }
-  }
-
-  render() {
-    let param = (this.state.session_state==="running" ? ((this.state.session_paused) ? "start" : "pause") : "start");
-    let btn_cls = (this.state.session_paused ? "play" : (this.state.session_state==="running" ? "pause" : "play"));
-
-    return (
-      <div id="Timer" className="App">
-        <Timeset 
-          setTimeFrame={(e) => this.UpdateSessionDurations(e)}
-          _id="break-label"
-          _class="break-control"
-          _type="Break"
-          _ctrl_i_id="break-decrement"
-          _ctrl_ii_id="break-increment"
-          _title="break-length"
-          _val={this.state.session_break}
-        />
-        <Timeset 
-          setTimeFrame={(e) => this.UpdateSessionDurations(e)}
-          _id="session-label"
-          _class="session-control"
-          _type="Duration"
-          _ctrl_i_id="session-decrement"
-          _ctrl_ii_id="session-increment"
-          _title="session-length"
-          _val={this.state.session_length}
-        /> 
-        <section className="timer">
-          <div className="container">
-            <h3 id="timer-label">
-              {(this.state.session_type==="countdown") ? "Session" : "Break"}
-            </h3>
-            <p id="time-left" 
-              className={(this.state.session_state==="running") ? ((this.state.session_type==="countdown") ? "active activated" : "on_break") : "deactivated"}>
-                {this.state.session_time}
-            </p>
-          </div>
-          <div className="controls">
-            <button id="start_stop" onClick={() => this.ManageSession(param)}>
-              <i className={`fa-solid fa-${btn_cls}`}></i>
-            </button>
-            <button id="reset" onClick={() => this.ManageSession("reset")}>
-              <i className="fa-solid fa-rotate"></i>
-            </button>
-            <audio id="beep" preload="auto" src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/BeepSound.wav"></audio>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  let ses_running = (SessionState==="running");
+  let ses_on_countdown = (SessionType==="countdown");
+  let param = ((!ses_running) ? "start" : (SessionOnPause ? "start" : "pause"));
+  let btn_cls = (SessionOnPause ? "play" : ((ses_running) ? "pause" : "play"));
+  
+  return (
+    <div id="Timer" className="App">
+      <Timeset 
+        setTimeFrame={(e) => UpdateDurations(e)}
+        _type="break"
+        _val={SessionBreak}
+      />
+      <Timeset 
+        setTimeFrame={(e) => UpdateDurations(e)}
+        _type="session"
+        _val={SessionLength}
+      /> 
+      <section className="timer">
+        <div className="container">
+          <h3 id="timer-label">{(ses_on_countdown) ? "Session" : "Break"}</h3>
+          <p id="time-left" 
+            className={(ses_running) ? ((ses_on_countdown) ? "active activated" : "on_break") : "deactivated"}>
+              {SessionTime}
+          </p>
+        </div>
+        <div className="controls">
+          <button id="start_stop" onClick={() => ManageSession(param)}>
+            <i className={`fa-solid fa-${btn_cls}`}></i>
+          </button>
+          <button id="reset" onClick={() => ManageSession("reset")}>
+            <i className="fa-solid fa-rotate"></i>
+          </button>
+          <audio id="beep" preload="auto" src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/BeepSound.wav"></audio>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export default App;

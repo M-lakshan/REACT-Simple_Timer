@@ -4,63 +4,49 @@ import '../styles/App.css';
 
 function App() {
 
-  const [SessionTime,SetSessionTime] = useState(new Date(15 * 1000).toISOString().substring(14, 19));
-  const [SessionBreak,SetSessionBreak] = useState(1);
-  const [SessionLength,SetSessionLength] = useState(2);
+  const [SessionTime,SetSessionTime] = useState(3);
+  const [SessionBreak,SetSessionBreak] = useState(2);
+  const [SessionLength,SetSessionLength] = useState(1);
   const [SessionState,SetSessionState] = useState("stopped");
   const [SessionType,SetSessionType] = useState("countdown");
   const [SessionOnPause,SetSessionOnPause] = useState(false);
 
   const UpdateDurations = (value) => {
+    let upd_val = (value["type"]==="break") ? SessionBreak : SessionLength;
 
-    try {
-      let upd_val = (value["type"]==="break") ? SessionBreak : SessionLength;
-
-      if(value["val"]==="up") {
-        upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? upd_val : upd_val+1);
-      } else {
-        upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
-      }
-          
-      console.log(upd_val)////////////////////////////////////////////////////////////////////////////////////////////
-      if(value["type"]==="break") {
-        SetSessionBreak(upd_val);
-      } else {
-        console.log("on_pause",(upd_val===60) ? "60:00" : new Date(upd_val * 60 * 1000).toISOString().substring(14, 19))////////////////////////////////////////////////////////////////////////////////////////////
-        SetSessionTime((upd_val===60) ? "60:00" : new Date(upd_val * 60 * 1000).toISOString().substring(14, 19));
-        SetSessionLength(upd_val);
-      } 
-    } catch (ex) {
-      console.log(ex);
+    if(value["val"]==="up") {
+      upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? 60 : upd_val+1);
+    } else {
+      upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
     }
+        
+    if(value["type"]==="break") {
+      SetSessionBreak(upd_val);
+    } else {
+      SetSessionTime(upd_val*60);
+      SetSessionLength(upd_val);
+    } 
   }
 
   useEffect(() => {
     
     const timer = setInterval(() => {
+
       if(SessionState==="running" && !SessionOnPause) {
 
-        if(SessionTime.toString()==="00:00") {
-          let upd_val = (SessionType==="countdown") ? SessionBreak : SessionLength;
-          let upd_time = `${upd_val===60 ? 60 : ((upd_val<10) ? '0'+upd_val : upd_val)}:00`; 
-          
+        if(SessionTime===0) {
           document.getElementById("beep").play();
 
-          console.log("jump:",upd_time)////////////////////////////////////////////////////////////////////////////////////////////
-          SetSessionType((SessionType==="countdown") ? "break" : "countdown");  
-          SetSessionTime(upd_time);  
+          setTimeout(() => {
+            SetSessionType((SessionType==="countdown") ? "break" : "countdown");  
+            SetSessionTime(((SessionType==="countdown") ? SessionBreak : SessionLength)*60);  
+          },1000);
         } else {
-          let dt = SessionTime.split(':').map(tm => parseInt(tm));
-          let mns = (dt[1]-1!==0) ? dt[0] : ((dt[0]===0) ? 0 : dt[0]-1); 
-          let scs = (dt[1]-1!==0) ? dt[1]-1 : ((dt[1]-1===0) ? 0 : 59);
-          
           setTimeout(() => document.getElementById("time-left").classList.remove("activated"), 1000);
-          
-          console.log(SessionType,new Date(((mns*60) + scs) * 1000).toISOString().substring(14, 19))////////////////////////////////////////////////////////////////////////////////////////////
-          SetSessionTime(new Date(((mns*60) + scs) * 1000).toISOString().substring(14, 19));  
+          SetSessionTime(SessionTime-1);
         }
       }
-    },100);
+    },1000);
 
     return () => clearInterval(timer);
   });
@@ -93,7 +79,7 @@ function App() {
       document.getElementById("beep").pause();
       document.getElementById("beep").currentTime = 0;
       
-      SetSessionTime(new Date(1500 * 1000).toISOString().substring(14, 19));
+      SetSessionTime(1500);
       SetSessionBreak(5);
       SetSessionLength(25);
       SetSessionState("stopped");
@@ -111,6 +97,8 @@ function App() {
   let ses_on_countdown = (SessionType==="countdown");
   let param = ((!ses_running) ? "start" : (SessionOnPause ? "start" : "pause"));
   let btn_cls = (SessionOnPause ? "play" : ((ses_running) ? "pause" : "play"));
+  let minutes = Math.floor(SessionTime / 60);
+  let seconds = SessionTime % 60;
   
   return (
     <div id="Timer" className="App">
@@ -123,13 +111,13 @@ function App() {
         setTimeFrame={(e) => UpdateDurations(e)}
         _type="session"
         _val={SessionLength}
-      /> 
+      />
       <section className="timer">
         <div className="container">
           <h3 id="timer-label">{(ses_on_countdown) ? "Session" : "Break"}</h3>
           <p id="time-left" 
             className={(ses_running) ? ((ses_on_countdown) ? "active activated" : "on_break") : "deactivated"}>
-              {SessionTime}
+              {minutes < 10 ? '0'+minutes : minutes}:{seconds < 10 ? '0'+seconds : seconds}
           </p>
         </div>
         <div className="controls">

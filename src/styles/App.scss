@@ -98,6 +98,7 @@
         background: #2e8cd4;
         margin-bottom: 5px;
         border-radius: 5px;
+        transition: 500ms ease-in-out;
       }
 
       #time-left.active {
@@ -114,7 +115,6 @@
       #time-left.activated {
         color: #6018A9;
         background: #32d077 !important;
-        transition: 500ms ease-in-out;
       }
 
       #time-left.postponed {
@@ -172,18 +172,66 @@
         }
       }
 
-      // #pause {
-
-      //   &:hover {
-      //     color: #ff8300 !important;
-      //   }
-      // }
-
       #beep {
         display: inline-block;
         position: absolute;
         z-index: -1;
         opacity: 0%;
+      }
+    }
+
+    @keyframes on_start {
+
+      from {
+        color: #6018A9;
+        background: #32d077;
+      } to {
+        color: #FFEF00;
+        background: #2e8cd4;
+      }
+    }
+
+    @keyframes on_pause {
+
+      from {
+        color: #FFEF00;
+        background: #2e8cd4;
+      } to {
+        color: #FFEF00;
+        background: #eb7e3c;
+      }
+    }
+
+    @keyframes on_stop {
+
+      from {
+        color: #FFEF00;
+        background: #f93e3e;
+      } to {
+        color: #FFF;
+        background: #2e8cd4;
+      }
+    }
+
+    @keyframes on_resume {
+    
+      from {
+        color: #FFEF00;
+        background: #eb7e3c;
+      } to {
+        color: #01F4DD;
+        background: #6018A9CC;
+      }
+    }
+
+    @keyframes time_jump {
+
+      from {
+        color: #FFEF00;
+        background: #2e8cd4;
+      } to {
+        color: #01F4DD;
+        background: #6018A9CC;
       }
     }
   }

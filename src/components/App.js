@@ -4,27 +4,20 @@ import '../styles/App.css';
 
 function App() {
 
-  const [SessionTime,SetSessionTime] = useState(3);
-  const [SessionBreak,SetSessionBreak] = useState(2);
-  const [SessionLength,SetSessionLength] = useState(1);
-  const [SessionState,SetSessionState] = useState("stopped");
-  const [SessionType,SetSessionType] = useState("countdown");
-  const [SessionOnPause,SetSessionOnPause] = useState(false);
+  const [SessionTime,setSessionTime] = useState(1500);
+  const [SessionBreak,setSessionBreak] = useState(300);
+  const [SessionLength,setSessionLength] = useState(1500);
+  const [SessionState,setSessionState] = useState("stopped");
+  const [SessionType,setSessionType] = useState("countdown");
+  const [SessionOnPause,setSessionOnPause] = useState(false);
 
-  const UpdateDurations = (value) => {
-    let upd_val = (value["type"]==="break") ? SessionBreak : SessionLength;
+  const UpdateDurations = (value,type) => {
 
-    if(value["val"]==="up") {
-      upd_val = (upd_val===1) ? 2 : ((upd_val===60) ? 60 : upd_val+1);
+    if(type==="break") {
+      setSessionBreak(value*60);
     } else {
-      upd_val = (upd_val===1) ? 1 : ((upd_val===60) ? 59 : upd_val-1);
-    }
-        
-    if(value["type"]==="break") {
-      SetSessionBreak(upd_val);
-    } else {
-      SetSessionTime(upd_val*60);
-      SetSessionLength(upd_val);
+      setSessionTime(value*60);
+      setSessionLength(value*60);
     } 
   }
 
@@ -34,16 +27,17 @@ function App() {
 
       if(SessionState==="running" && !SessionOnPause) {
 
-        if(SessionTime===0) {
+        if(SessionTime-1===0) {
           document.getElementById("beep").play();
+        }
 
-          setTimeout(() => {
-            SetSessionType((SessionType==="countdown") ? "break" : "countdown");  
-            SetSessionTime(((SessionType==="countdown") ? SessionBreak : SessionLength)*60);  
-          },1000);
+        if(SessionTime===0) {
+          clearInterval(timer);
+
+          setTimeout(() => ManageSession("change"),1000);
         } else {
           setTimeout(() => document.getElementById("time-left").classList.remove("activated"), 1000);
-          SetSessionTime(SessionTime-1);
+          setSessionTime(SessionTime-1);
         }
       }
     },1000);
@@ -52,6 +46,7 @@ function App() {
   });
 
   const ManageSession = (type) => {
+/*
     let countdown = document.getElementById("time-left");
     
     if(SessionState==="stopped") {
@@ -74,41 +69,44 @@ function App() {
       countdown.classList.remove("stopped");
       (type==="reset") && countdown.classList.remove("active");
     }, 1000);
-
+*/
     if(type==="reset") {
       document.getElementById("beep").pause();
       document.getElementById("beep").currentTime = 0;
       
-      SetSessionTime(1500);
-      SetSessionBreak(5);
-      SetSessionLength(25);
-      SetSessionState("stopped");
-      SetSessionType("countdown");
-      SetSessionOnPause(false);
+      setSessionOnPause(false);
+      setSessionState("stopped");
+      setSessionType("countdown");
+      setSessionBreak(300);
+      setSessionLength(1500);
+      setSessionTime(1500);
     } else if(type==="pause") {
-      (SessionType!=="break") && SetSessionOnPause(!SessionOnPause);
+      (SessionType!=="break") && setSessionOnPause(!SessionOnPause);
+    } else if(type==="change") {
+      setSessionType((SessionType==="countdown") ? "break" : "countdown");  
+      setSessionTime(((SessionType==="countdown") ? SessionBreak : SessionLength));
     } else {
-      SetSessionState("running");
-      SetSessionOnPause(false);
+      setSessionOnPause(false);
+      setSessionState("running");
     }
   }
 
   let ses_running = (SessionState==="running");
   let ses_on_countdown = (SessionType==="countdown");
   let param = ((!ses_running) ? "start" : (SessionOnPause ? "start" : "pause"));
-  let btn_cls = (SessionOnPause ? "play" : ((ses_running) ? "pause" : "play"));
+  let btn_cls = (!ses_running ? "play" : ((SessionOnPause) ? "play" : "pause"));
   let minutes = Math.floor(SessionTime / 60);
   let seconds = SessionTime % 60;
   
   return (
     <div id="Timer" className="App">
       <Timeset 
-        setTimeFrame={(e) => UpdateDurations(e)}
+        setTimeFrame={(e) => UpdateDurations(e,"break")}
         _type="break"
         _val={SessionBreak}
       />
       <Timeset 
-        setTimeFrame={(e) => UpdateDurations(e)}
+        setTimeFrame={(e) => UpdateDurations(e,"session")}
         _type="session"
         _val={SessionLength}
       />
